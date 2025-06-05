@@ -45,9 +45,9 @@ pip install -r requirements.txt
 ## Using large datasets
 
 The paper uses 1B-sized datasets for the OGBench environments.
-Since the datasets are too large to be hosted, we provide 100M-sized datasets (1/10 of the original size),
+Since the original datasets are too large to be hosted, we provide 100M-sized datasets (1/10 of the original size),
 which we found to be sufficient for most of the tasks.
-These datasets can be downloaded with the following commands:
+These datasets can be downloaded with the following commands (see [this section of the OGBench repository](https://github.com/seohongpark/ogbench?tab=readme-ov-file#additional-features) for more diverse 100M-sized datasets available):
 ```bash
 # cube-octuple-play-100m (100 datasets * 1000 length-1000 trajectories).
 wget -r -np -nH --cut-dirs=2 -A "*.npz" https://rail.eecs.berkeley.edu/datasets/ogbench/cube-octuple-play-100m-v0/
