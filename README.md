@@ -5,7 +5,7 @@
     <summary>
       <h1>Horizon Reduction Makes RL Scalable</h1>
       <br>
-      <h2><a href="">Paper</a></h2>
+      <h2><a href="https://arxiv.org/abs/2506.04168">Paper</a></h2>
     </summary>
   </ul>
 </div>
@@ -59,7 +59,7 @@ wget -r -np -nH --cut-dirs=2 -A "*.npz" https://rail.eecs.berkeley.edu/datasets/
 wget -r -np -nH --cut-dirs=2 -A "*.npz" https://rail.eecs.berkeley.edu/datasets/ogbench/humanoidmaze-giant-navigate-100m-v0/
 ```
 
-To use the full 1B-sized datasets, you can generate them yourself.
+To use the full 1B-sized datasets, you need to generate them manually.
 Generating a 1B-sized dataset requires 1000-1500 CPU hours and 279-551GB of disk space.
 To generate datasets, run the commands below.
 
