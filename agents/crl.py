@@ -199,7 +199,7 @@ def get_config():
             latent_dim=1024,  # Latent dimension for phi and psi.
             layer_norm=True,  # Whether to use layer normalization.
             discount=0.999,  # Discount factor.
-            alpha=1,  # Temperature in AWR or BC coefficient in DDPG+BC.
+            alpha=1.0,  # Temperature in AWR or BC coefficient in DDPG+BC.
             const_std=True,  # Whether to use constant standard deviation for the actor.
             # Dataset hyperparameters.
             dataset_class='GCDataset',  # Dataset class name.
