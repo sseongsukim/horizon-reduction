@@ -16,6 +16,7 @@ from envs.env_utils import make_env_and_datasets
 from utils.datasets import Dataset, GCDataset, HGCDataset
 from utils.evaluation import evaluate
 from utils.flax_utils import restore_agent, save_agent
+from utils.logger import create_logger
 from utils.log_utils import (
     CsvLogger,
     get_exp_name,
@@ -24,16 +25,17 @@ from utils.log_utils import (
     setup_wandb,
 )
 
+
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string("run_group", "Debug", "Run group.")
 flags.DEFINE_integer("seed", 0, "Random seed.")
 flags.DEFINE_string(
-    "env_name", "puzzle-4x5-play-oraclerep-v0", "Environment (dataset) name."
+    "env_name", "puzzle-4x6-play-oraclerep-v0", "Environment (dataset) name."
 )
 flags.DEFINE_string("dataset_dir", None, "Dataset directory.")
 flags.DEFINE_integer("dataset_replace_interval", 1000, "Dataset replace interval.")
-flags.DEFINE_integer("num_datasets", 1, "Number of datasets to use.")
+flags.DEFINE_integer("num_datasets", None, "Number of datasets to use.")
 flags.DEFINE_string("save_dir", "exp/", "Save directory.")
 flags.DEFINE_string("wandb_mode", "offline", "Restore path.")
 
@@ -56,22 +58,32 @@ config_flags.DEFINE_config_file("agent", "agents/sharsa.py", lock_config=False)
 
 def main(_):
     # Set up logger.
-    exp_name = get_exp_name(FLAGS.seed)
+    exp_name = get_exp_name(FLAGS.env_name, FLAGS.seed)
+
+    if FLAGS.num_datasets is not None:
+        exp_name += f"_num_datasets_{FLAGS.num_datasets}"
+    else:
+        exp_name += f"_num_datasets_1b"
+
     setup_wandb(
         project="horizon-reduction",
-        group=FLAGS.run_group,
+        group=FLAGS.env_name,
         name=exp_name,
         mode=FLAGS.wandb_mode,
     )
 
     FLAGS.save_dir = os.path.join(
         FLAGS.save_dir,
-        wandb.run.project,
         FLAGS.run_group,
         exp_name,
     )
-
     os.makedirs(FLAGS.save_dir, exist_ok=True)
+
+    logger = create_logger(
+        name="horizon_reduction",
+        save_dir=FLAGS.save_dir,
+    )
+
     flag_dict = get_flag_dict()
     with open(os.path.join(FLAGS.save_dir, "flags.json"), "w") as f:
         json.dump(flag_dict, f)
@@ -133,19 +145,18 @@ def main(_):
 
         # Log metrics.
         if i % FLAGS.log_interval == 0:
-            train_metrics = {f"training/{k}": v for k, v in update_info.items()}
-
             val_batch = val_dataset.sample(config["batch_size"])
             _, val_info = agent.total_loss(val_batch, grad_params=None)
-            train_metrics.update({f"validation/{k}": v for k, v in val_info.items()})
+            update_info.update({f"validation/{k}": v for k, v in val_info.items()})
 
-            train_metrics["time/epoch_time"] = (
+            update_info["time/epoch_time"] = (
                 time.time() - last_time
             ) / FLAGS.log_interval
-            train_metrics["time/total_time"] = time.time() - first_time
+            update_info["time/total_time"] = time.time() - first_time
+
             last_time = time.time()
-            wandb.log(train_metrics, step=i)
-            train_logger.log(train_metrics, step=i)
+            wandb.log(update_info, step=i)
+            train_logger.log(update_info, step=i)
 
         # Evaluate agent.
         if FLAGS.eval_interval != 0 and i % FLAGS.eval_interval == 0:
@@ -185,8 +196,12 @@ def main(_):
                 for k, v in eval_info.items():
                     if k in metric_names:
                         overall_metrics[k].append(v)
+
             for k, v in overall_metrics.items():
                 eval_metrics[f"evaluation/overall_{k}"] = np.mean(v)
+
+            for k, v in eval_metrics.items():
+                logger.info(f"[eval metrics] {k}: {v:.4f}")
 
             if FLAGS.video_episodes > 0:
                 video = get_wandb_video(renders=renders, n_cols=5)

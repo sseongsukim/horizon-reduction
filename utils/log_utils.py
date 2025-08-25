@@ -19,17 +19,29 @@ class CsvLogger:
         self.disallowed_types = (wandb.Image, wandb.Video, wandb.Histogram)
 
     def log(self, row, step):
-        row['step'] = step
+        row["step"] = step
         if self.file is None:
-            self.file = open(self.path, 'w')
+            self.file = open(self.path, "w")
             if self.header is None:
-                self.header = [k for k, v in row.items() if not isinstance(v, self.disallowed_types)]
-                self.file.write(','.join(self.header) + '\n')
-            filtered_row = {k: v for k, v in row.items() if not isinstance(v, self.disallowed_types)}
-            self.file.write(','.join([str(filtered_row.get(k, '')) for k in self.header]) + '\n')
+                self.header = [
+                    k
+                    for k, v in row.items()
+                    if not isinstance(v, self.disallowed_types)
+                ]
+                self.file.write(",".join(self.header) + "\n")
+            filtered_row = {
+                k: v for k, v in row.items() if not isinstance(v, self.disallowed_types)
+            }
+            self.file.write(
+                ",".join([str(filtered_row.get(k, "")) for k in self.header]) + "\n"
+            )
         else:
-            filtered_row = {k: v for k, v in row.items() if not isinstance(v, self.disallowed_types)}
-            self.file.write(','.join([str(filtered_row.get(k, '')) for k in self.header]) + '\n')
+            filtered_row = {
+                k: v for k, v in row.items() if not isinstance(v, self.disallowed_types)
+            }
+            self.file.write(
+                ",".join([str(filtered_row.get(k, "")) for k in self.header]) + "\n"
+            )
         self.file.flush()
 
     def close(self):
@@ -37,13 +49,13 @@ class CsvLogger:
             self.file.close()
 
 
-def get_exp_name(seed):
+def get_exp_name(env_name, seed):
     """Return the experiment name."""
-    exp_name = ''
-    exp_name += f'sd{seed:03d}_'
-    if 'SLURM_JOB_ID' in os.environ:
+    exp_name = env_name
+    exp_name += f"_sd{seed:03d}_"
+    if "SLURM_JOB_ID" in os.environ:
         exp_name += f's_{os.environ["SLURM_JOB_ID"]}.'
-    if 'SLURM_PROCID' in os.environ:
+    if "SLURM_PROCID" in os.environ:
         exp_name += f'{os.environ["SLURM_PROCID"]}.'
     exp_name += f'{datetime.now().strftime("%Y%m%d_%H%M%S")}'
 
@@ -52,7 +64,7 @@ def get_exp_name(seed):
 
 def get_flag_dict():
     """Return the dictionary of flags."""
-    flag_dict = {k: getattr(flags.FLAGS, k) for k in flags.FLAGS if '.' not in k}
+    flag_dict = {k: getattr(flags.FLAGS, k) for k in flags.FLAGS if "." not in k}
     for k in flag_dict:
         if isinstance(flag_dict[k], ml_collections.ConfigDict):
             flag_dict[k] = flag_dict[k].to_dict()
@@ -61,10 +73,10 @@ def get_flag_dict():
 
 def setup_wandb(
     entity=None,
-    project='project',
+    project="project",
     group=None,
     name=None,
-    mode='online',
+    mode="online",
 ):
     """Set up Weights & Biases for logging."""
     wandb_output_dir = tempfile.mkdtemp()
@@ -79,7 +91,7 @@ def setup_wandb(
         dir=wandb_output_dir,
         name=name,
         settings=wandb.Settings(
-            start_method='thread',
+            start_method="thread",
             _disable_stats=False,
         ),
         mode=mode,
@@ -138,9 +150,14 @@ def get_wandb_video(renders=None, n_cols=None, fps=15):
         renders[i] = np.concatenate([render, pad], axis=0)
 
         # Add borders.
-        renders[i] = np.pad(renders[i], ((0, 0), (1, 1), (1, 1), (0, 0)), mode='constant', constant_values=0)
+        renders[i] = np.pad(
+            renders[i],
+            ((0, 0), (1, 1), (1, 1), (0, 0)),
+            mode="constant",
+            constant_values=0,
+        )
     renders = np.array(renders)  # (n, t, h, w, c)
 
     renders = reshape_video(renders, n_cols)  # (t, c, nr * h, nc * w)
 
-    return wandb.Video(renders, fps=fps, format='mp4')
+    return wandb.Video(renders, fps=fps, format="mp4")
